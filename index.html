@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpellTest</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- daisyui and tailwind cdn -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.12/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jquery cdn -->
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="flex flex-col justify-center items-center min-h-screen">
+        <h1 id="heading" class="text-6xl font-extrabold">Please enter your name below:</h1>
+        <input class="input input-bordered input-neutral w-2/5 mt-20 text-center">
+    </div>
+</body>
+<script>
+    //init variables
+    const socket = io();
+    let name = false;
+    let wordIndex = 1;
+    let words = {};
+
+    $("input").on("keypress", event => {
+        if (event.key === "Enter" && !name) {
+            name = $("input").val();
+            $("input").val("");
+            socket.emit("setName", name);
+            $("#heading").text(`Enter spelling for word ${wordIndex}:`)
+        } else if (event.key === "Enter") {
+            if (words[wordIndex]) {
+                if ($("input").val().trim() === words[wordIndex]) {
+                    socket.emit("wordSubmission", [name, wordIndex, $("input").val(), words[wordIndex]]);
+                    $("input").val("");
+                    $("#heading").html("<p class='text-success'>Correct! Moving onto next word...</p>");
+                    setTimeout(() => {
+                        $("#heading").fadeOut(500);
+                        wordIndex++;
+                        setTimeout(() => {
+                            $("#heading").show();
+                            $("#heading").html(`<p>Enter spelling for word ${wordIndex}:</p>`);
+                        }, 550)
+                    }, 1500)
+                } else {
+                    socket.emit("wordSubmission", [name, wordIndex, $("input").val(), words[wordIndex]]);
+                    $("input").val("");
+                    $("#heading").html(`<p class='text-error'>Incorrect! The correct spelling is ${words[wordIndex]}</p>`);
+                    setTimeout(() => {
+                        $("#heading").fadeOut(500);
+                        wordIndex++;
+                        setTimeout(() => {
+                            $("#heading").show();
+                            $("#heading").html(`<p>Enter spelling for word ${wordIndex}:</p>`);
+                        }, 550)
+                    }, 1500)
+                }
+            } else {
+                $("#heading").html("<p class='text-warning'>Please wait for this word to be loaded...</p>");
+                setTimeout(() => {
+                    $("#heading").fadeOut(500);
+                    $("input").val("");
+                    setTimeout(() => {
+                        $("#heading").show();
+                        $("#heading").html(`<p>Enter spelling for word ${wordIndex}:</p>`);
+                    }, 550)
+                }, 1000)
+            }
+        }
+    })
+    socket.on("word", word => {
+        words[word[0]] = word[1];
+    })
+</script>
+</html>

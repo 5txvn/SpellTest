@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpellTest</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- daisyui and tailwind cdn -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.12/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jquery cdn -->
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="flex flex-col">
+        <div class="flex flex-col justify-center items-center h-[45vh] border-b-2">
+            <h1 id="heading" class="text-6xl font-extrabold">Enter Word 1:</h1>
+            <input class="input input-bordered input-neutral w-2/5 mt-16 text-center">
+        </div>
+        <div id="output" class="m-8 h-[50vh] overflow-auto">
+            <p class="text-2xl font-extrabold">Terminal output will appear below...</p>
+        </div>
+    </div>
+</body>
+<script>
+    const socket = io();
+    let wordIndex = 1;
+    $("input").focus();
+
+    const output = text => $("#output").append(text);
+
+    $("input").on("keypress", event => {
+        if (event.key === "Enter") {
+            socket.emit("setWord", [wordIndex, $("input").val()]);
+            wordIndex++;
+            $("#heading").text(`Enter Word ${wordIndex}:`);
+            $("input").val("");
+        }
+    })
+
+    socket.on("name", name => {
+        output(`<p class="font-extrabold text-warning text-2xl">${name} has entered the current spelling session!</p>`);
+    })
+    socket.on("wordSubmissionAdmin", data => {
+        if (data[2] === data[3]) {
+            output(`<p class="font-bold text-success text-2xl">${data[0]} spelled ${data[3]} correctly!</p>`);
+        } else {
+            output(`<p class="font-bold text-error text-2xl">${data[0]} spelled ${data[3]} incorrectly (spelt it as ${data[2]})!</p>`);
+        }
+    })
+</script>
+<style>
+    #output::-webkit-scrollbar {
+        display: none;
+    }
+
+    #output {
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
+        scrollbar-width: none; /* Firefox */
+    }
+</style>
+</html>
